@@ -297,13 +297,49 @@ export default {
     };
   },
   methods: {
-    getAreaIdInitValue(value) {
-      this.areaIdInitValue = value;
-      console.log(value);
+    handler({ BMap, map }) {
+      this.zoom = 12;
+      this.mapRef = map;
+      this.center.lng = 104.072745;
+      this.center.lat = 30.578994;
+      this.mapRef.clearOverlays();
+      this.geocoderRef = new BMap.Geocoder();
+      let geolocation = new BMap.Geolocation();
+      geolocation.getCurrentPosition((event) => {
+        console.log("event", event);
+      });
     },
-    getProjectIdInitValue(value) {
-      this.projectIdInitValue = value;
-      console.log(value);
+
+    initLabelContent() {
+      setTimeout(() => {
+        const labelFomatterSets =
+          document.getElementsByClassName("labelFomatterRef");
+        if (labelFomatterSets.length == 0) return;
+        const labelFomatterRefs = Array.prototype.slice.call(labelFomatterSets);
+        labelFomatterRefs.forEach((item) => {
+          item.onmouseenter = () => {
+            item.style.background = "rgb(250, 87, 65)";
+            let boundaryRef = new BMap.Boundary();
+            boundaryRef.get(item.dataset.name, (res) => {
+              if (!res.boundaries.length) return;
+              this.plyRef = new BMap.Polygon(res.boundaries[0], {
+                strokeWeight: 2,
+                fillColor: "green",
+                strokeColor: "green",
+                fillOpacity: 0.07,
+                strokeStyle: "solid",
+              });
+              this.plyRef.polygonTag = true;
+              this.mapRef.addOverlay(this.plyRef);
+            });
+          };
+          item.onmouseleave = () => {
+            item.style.background = "#05ae67";
+            this.commonClearPolygon();
+          };
+        });
+      }, 100);
+      //等待labelFomatterSets挂载完毕后、微任务中执行;
     },
     onViewImage() {
       this.dialogVisible = true;
@@ -350,18 +386,6 @@ export default {
             params: { address: this.currentAddress, position: this.center },
           });
         }
-      });
-    },
-    handler({ BMap, map }) {
-      this.zoom = 12;
-      this.mapRef = map;
-      this.center.lng = 104.072745;
-      this.center.lat = 30.578994;
-      this.mapRef.clearOverlays();
-      this.geocoderRef = new BMap.Geocoder();
-      let geolocation = new BMap.Geolocation();
-      geolocation.getCurrentPosition((event) => {
-        console.log("event", event);
       });
     },
     onZoomend() {
@@ -436,38 +460,6 @@ export default {
       //此时改用onmouseenter与onmouseleave绑定子元素labelDocument原生标签即可解决该问题;
     },
 
-    initLabelContent() {
-      setTimeout(() => {
-        const labelFomatterSets =
-          document.getElementsByClassName("labelFomatterRef");
-        if (labelFomatterSets.length == 0) return;
-        const labelFomatterRefs = Array.prototype.slice.call(labelFomatterSets);
-        labelFomatterRefs.forEach((item) => {
-          item.onmouseenter = () => {
-            item.style.background = "rgb(250, 87, 65)";
-            let boundaryRef = new BMap.Boundary();
-            boundaryRef.get(item.dataset.name, (res) => {
-              if (!res.boundaries.length) return;
-              this.plyRef = new BMap.Polygon(res.boundaries[0], {
-                strokeWeight: 2,
-                fillColor: "green",
-                strokeColor: "green",
-                fillOpacity: 0.07,
-                strokeStyle: "solid",
-              });
-              this.plyRef.polygonTag = true;
-              this.mapRef.addOverlay(this.plyRef);
-            });
-          };
-          item.onmouseleave = () => {
-            item.style.background = "#05ae67";
-            this.commonClearPolygon();
-          };
-        });
-      }, 100);
-      //等待labelFomatterSets挂载完毕后、微任务中执行;
-    },
-
     getReigonLocation(cityName, regionName) {
       return axios
         .get("/baiduMapAPI/place/v2/search", {
@@ -493,10 +485,17 @@ export default {
     },
 
     commonClearPolygon() {
-      let allOverlay = this.mapRef.getOverlays();
-      allOverlay.map((overlayItem) => {
+      let ALLOVERLAY = this.mapRef.getOverlays();
+      ALLOVERLAY.map((overlayItem) => {
         if (overlayItem.polygonTag) this.mapRef.removeOverlay(overlayItem);
       });
+    },
+
+    getAreaIdInitValue(value) {
+      this.areaIdInitValue = value;
+    },
+    getProjectIdInitValue(value) {
+      this.projectIdInitValue = value;
     },
   },
 };
@@ -532,18 +531,14 @@ export default {
     height: 770px;
   }
   .infoWindow {
-    /* height: 130px; */
     width: 320px;
-    /* background: red; */
     display: flex;
     .left {
       width: 60%;
-      /* background: rgb(125, 125, 125); */
       padding: 3px;
     }
     .right {
       width: 40%;
-      /* background: rgb(37, 152, 76); */
       padding: 3px;
       display: flex;
       align-items: center;
